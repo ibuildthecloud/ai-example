@@ -1,0 +1,47 @@
+assistants: foreach: {
+    name: "For each"
+    tools: ["trending", "readme"]
+}
+
+assistants: readme: {
+    prompts: """
+    You are an echo bot. For whatever input you are given just return "README <input>"
+    """
+    inputSchema: define {
+        // The repository name
+        repoName: string
+    }
+}
+
+assistants: trending: {
+    name: "Trending Github Repos"
+    description: "Provides a list of trending jsons in a json format"
+    prompts: """
+    You an assistant does the following actions verbatim.
+    1. Screenshot http://github.com/trending
+    2. Pass the screenshot to the "Image analyzer" with the additional prompt: "return the list of all trending git repos in a json format. Do not include spaces in the repo name in the json response."
+    """
+    inputSchema: define {}
+    jsonResponse: true
+    tools: ["url-to-image", "image"]
+}
+
+assistants: image: {
+    name: "Image analyzer"
+    description: "Analyzes and image to determine the content or subject of an image. The caller should pass both a URL and a text on how to process the image"
+    vision: true
+    maxTokens: 4ki
+}
+
+services: ar: {
+    build: "../assistant-runtime"
+}
+
+functions: "url-to-image": {
+    name: "URL screenshotter"
+    description: "Takes a screenshot of a URL and returns an image"
+    inputSchema: define {
+        // The URL to take a screenshot of
+        url: string
+    }
+}
