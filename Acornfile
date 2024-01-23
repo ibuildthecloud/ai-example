@@ -47,7 +47,7 @@ assistants: reposummarizer: {
     name: "Repo summarizer"
     description: "Summarizes a github repo"
     prompts: """
-    Return a 150-300 word summary of the given repoName by downloading the README contents from the URL
+    Return a 150-200 word summary of the given repoName by downloading the README contents from the URL
     https://raw.githubusercontent.com/${repoName}/main/README.md.  If that URL returns an error try the
     URL https://raw.githubusercontent.com/${repoName}/master/README.md to download the README.
 
