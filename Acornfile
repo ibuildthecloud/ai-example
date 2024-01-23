@@ -1,16 +1,17 @@
-assistants: foreach: {
-    name: "For each"
-    tools: ["trending", "readme"]
+assistants: chat: {
+    name: "Chat example"
 }
 
-assistants: readme: {
+assistants: workflow: {
+    name: "Main workflow"
+    tools: ["trending", "reposummarizer", "supportsdockercompose"]
     prompts: """
-    You are an echo bot. For whatever input you are given just return "README <input>"
+    Do the following:
+    1. Get a list of github trending repos.
+    2. For each repo summarize the project.
+    2. Also check if the repo support docker compose
+    3. Create a consolidated report of the above
     """
-    inputSchema: define {
-        // The repository name
-        repoName: string
-    }
 }
 
 assistants: trending: {
@@ -26,6 +27,40 @@ assistants: trending: {
     tools: ["url-to-image", "image"]
 }
 
+assistants: supportsdockercompose: {
+    name: "Supports docker compose"
+    description: "Returns the docker compose file for a given repo or will return 'false' if the repo does not support docker compose"
+    prompts: """
+    Looks for a file at https://raw.githubusercontent.com/${repoName}/${branchName}/docker-compose.yaml to download the docker compose file.
+    The branchName may be main or master. If the URL contains a valid looking docker compose file then print the word true.
+    If the contents do not look like a valid docker compose file just return the word false. You should only return the words true, false, or
+    error if something has gone wrong or unexpectedly.
+    """
+    inputSchema: define {
+        // The repository name
+        repoName: string
+    }
+    tools: ["download-url"]
+}
+
+assistants: reposummarizer: {
+    name: "Repo summarizer"
+    description: "Summarizes a github repo"
+    prompts: """
+    Return a 150-300 word summary of the given repoName by downloading the README contents from the URL
+    https://raw.githubusercontent.com/${repoName}/main/README.md.  If that URL returns an error try the
+    URL https://raw.githubusercontent.com/${repoName}/master/README.md to download the README.
+
+    The summary should describe what the project does and why it might be useful to a user. Do not describe
+    the contents of the repository or how to contribute to the project.
+    """
+    inputSchema: define {
+        // The repository name
+        repoName: string
+    }
+    tools: ["download-url"]
+}
+
 assistants: image: {
     name: "Image analyzer"
     description: "Analyzes and image to determine the content or subject of an image. The caller should pass both a URL and a text on how to process the image"
@@ -34,12 +69,22 @@ assistants: image: {
 }
 
 services: ar: {
-    build: "../assistant-runtime"
+    image: "ghcr.io/acorn-io/assistant-runtime:latest"
+    autoUpgrade: true
 }
 
 functions: "url-to-image": {
     name: "URL screenshotter"
     description: "Takes a screenshot of a URL and returns an image"
+    inputSchema: define {
+        // The URL to take a screenshot of
+        url: string
+    }
+}
+
+functions: "download-url": {
+    name: "URL downloader"
+    description: "Downloads the contents of a URL"
     inputSchema: define {
         // The URL to take a screenshot of
         url: string
